@@ -1,4 +1,3 @@
-# Craigslist.py
 import requests
 from bs4 import BeautifulSoup
 
@@ -31,5 +30,3 @@ def extract_craigslist_data(url):
 
     return craigslist_data
     
-# URL of the Craigslist page
-#url = "https://dallas.craigslist.org/search/dallas-tx/cta?auto_make_model=honda%20odyssey&lat=32.7833&lon=-96.8&max_auto_miles=190000&max_auto_year=2024&max_price=25000&min_auto_miles=0&min_auto_year=2017&min_price=800&search_distance=410#search=1~gallery~0~100"  # Replace with the actual URL

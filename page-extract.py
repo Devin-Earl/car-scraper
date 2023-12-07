@@ -12,15 +12,8 @@ user_agents = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
     "Mozilla/5.0 (iPad; CPU OS 13_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/91.0.4472.77 Mobile/15E148 Safari/604.1",
-    # Your original User-Agent
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    # Add more User-Agents if needed
-]
+    user_agent = random.choice(user_agents)
 
-# Choose a random User-Agent
-user_agent = random.choice(user_agents)
-
-# Set more sophisticated headers
 headers = {
     "User-Agent": user_agent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -30,18 +23,15 @@ headers = {
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
     "Referer": "https://www.google.com/",
-    # Add more headers if needed
+    
 }
 
-# Send an HTTP GET request to the URL with headers
 response = requests.get(url, headers=headers)
 
-# Check if the request was successful
 if response.status_code == 200:
-    # Generate a random file name using uuid
     file_name = f'extracted-page_{uuid.uuid4()}.html'
 
-    # Save the HTML content to a file with the random file name
+
     with open(file_name, 'w', encoding='utf-8') as file:
         file.write(response.text)
     print(f"HTML content saved to {file_name}")
