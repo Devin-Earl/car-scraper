@@ -1,53 +1,51 @@
-import requests
-from bs4 import BeautifulSoup
+import datetime
+import os
 import csv
+from autotrader import scrape_autotrader_data
+from craigslist import extract_craigslist_data
 
-# URL of AutoTrader search results page
-url = "https://www.autotrader.com/cars-for-sale/cars-under-24000/honda/odyssey/roanoke-tx?isNewSearch=true&maxMileage=150000&searchRadius=0&startYear=2018&trimCodeList=ODYSSEY%7CEX-L%2CODYSSEY%7CElite%2CODYSSEY%7CTouring%2CODYSSEY%7CTouring%20Elite&zip=76262"
+def standardize_data(autotrader_data, craigslist_data):
+    # Standardize AutoTrader data by adding 'N/A' for location
+    standardized_autotrader = [item + ['N/A'] for item in autotrader_data]
 
-# Set a User-Agent header to avoid potential blocking
-headers = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-}
+    # Standardize Craigslist data by inserting 'N/A' for mileage
+    standardized_craigslist = [item[:2] + ['N/A'] + item[2:] for item in craigslist_data]
 
-# Send an HTTP GET request to the URL with headers
-response = requests.get(url, headers=headers)
+    return standardized_autotrader + standardized_craigslist
 
-# Check if the request was successful
-if response.status_code == 200:
-    # Parse the HTML content of the page using BeautifulSoup
-    soup = BeautifulSoup(response.text, 'html.parser')
+def combine_and_check_duplicates(combined_data, previous_file):
+    if os.path.exists(previous_file):
+        with open(previous_file, 'r', encoding='utf-8') as file:
+            existing_data = list(csv.reader(file))
+            for row in combined_data:
+                if row in existing_data:
+                    row.append('Duplicate')
+                else:
+                    row.append('New')
+    else:
+        combined_data = [row + ['New'] for row in combined_data]
 
-    # Find all car listings
-    car_listings = soup.find_all('div', class_='inventory-listing')
+    return combined_data
 
-    # Open a CSV file to write to
-    with open('car_listings.csv', 'w', newline='', encoding='utf-8') as file:
+def save_to_csv(data, file_name):
+    with open(file_name, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        # Write the header
-        writer.writerow(['Title', 'Price', 'Mileage', 'Link'])
+        writer.writerow(['Title', 'Price', 'Mileage', 'Location', 'Link', 'Status'])
+        writer.writerows(data)
 
-        for car in car_listings:
-            # Extract car title
-            title_tag = car.find('h3', class_='text-bold')
-            title = title_tag.get_text().strip() if title_tag else 'No Title'
+def main():
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    filename = f"{current_date}_car_listings.csv"
+    previous_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    previous_file = f"{previous_date}_car_listings.csv"
 
-            # Extract car price
-            price_tag = car.find('span', class_='first-price')
-            price = price_tag.get_text().strip() if price_tag else 'No Price'
+    autotrader_data = scrape_autotrader_data()
+    craigslist_url = "https://dallas.craigslist.org/search/dallas-tx/cta?auto_make_model=honda%20odyssey&lat=32.7833&lon=-96.8&max_auto_miles=190000&max_auto_year=2024&max_price=25000&min_auto_miles=0&min_auto_year=2017&min_price=800&search_distance=410#search=1~gallery~0~100"
+    craigslist_data = extract_craigslist_data(craigslist_url)
 
-            # Extract car mileage
-            mileage_tag = car.find('span', class_='text-bold')
-            mileage = mileage_tag.get_text().strip() if mileage_tag else 'No Mileage'
+    standardized_data = standardize_data(autotrader_data, craigslist_data)
+    combined_data = combine_and_check_duplicates(standardized_data, previous_file)
+    save_to_csv(combined_data, filename)
 
-            # Extract car URL
-            link_tag = car.find('a', {'data-cmp': 'link'})
-            link = 'https://www.autotrader.com' + link_tag['href'].strip() if link_tag else 'No URL'
-
-            # Write to CSV
-            writer.writerow([title, price, mileage, link])
-
-    print("Data has been written to car_listings.csv")
-
-else:
-    print(f"Error: {response.status_code} - Unable to fetch data from AutoTrader.")
+if __name__ == "__main__":
+    main()
